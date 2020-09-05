@@ -54,7 +54,7 @@ class CriteoDataset(torch.utils.data.Dataset):
 
     def __build_cache(self, path, cache_path):
         feat_mapper, defaults = self.__get_feat_mapper(path)
-        with lmdb.open(cache_path, map_size=int(1e11)) as env:
+        with lmdb.open(cache_path, map_size=int(1e9)) as env:
             field_dims = np.zeros(self.NUM_FEATS, dtype=np.uint32)
             for i, fm in feat_mapper.items():
                 field_dims[i - 1] = len(fm) + 1
@@ -63,6 +63,7 @@ class CriteoDataset(torch.utils.data.Dataset):
             for buffer in self.__yield_buffer(path, feat_mapper, defaults):
                 with env.begin(write=True) as txn:
                     for key, value in buffer:
+                        print('kv=={},{}'.format(key,value))
                         txn.put(key, value)
 
     def __get_feat_mapper(self, path):
