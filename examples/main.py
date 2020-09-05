@@ -149,6 +149,7 @@ def main(dataset_name,
          weight_decay,
          device,
          save_dir):
+    print('model_name={}'.format(model_name))
     device = torch.device(device)
     dataset = get_dataset(dataset_name, dataset_path)
     train_length = int(len(dataset) * 0.8)
@@ -203,7 +204,7 @@ if __name__ == '__main__':
          'lr',
          100,
          0.1,
-         10,
+         100,
          1e-6,
          "cuda:0" if torch.cuda.is_available() else "cpu",
          '../data/chkpt')
