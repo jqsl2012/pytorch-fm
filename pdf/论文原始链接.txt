@@ -1,0 +1,14 @@
+https://www.kaggle.com/jqsl2012
+https://github.com/topics/ctr
+https://github.com/topics/click-through-rate
+https://betterxys.github.io/2017/09/29/survey/
+
+AFM: Attentional Factorization Machines: Learning the Weight of Feature Interactions via Attention Networks
+https://arxiv.org/abs/1708.04617
+
+AFN: Adaptive Factorization Network: Learning Adaptive-Order Feature Interactions
+https://arxiv.org/abs/1909.03276
+
+
+https://deepctr-doc.readthedocs.io/en/latest/Features.html
+https://www.jiqizhixin.com/articles/2018-07-16-17
