@@ -63,7 +63,7 @@ class CriteoDataset(torch.utils.data.Dataset):
             for buffer in self.__yield_buffer(path, feat_mapper, defaults):
                 with env.begin(write=True) as txn:
                     for key, value in buffer:
-                        print('kv=={},{}'.format(key,value))
+                        # print('kv=={},{}'.format(key,value))
                         txn.put(key, value)
 
     def __get_feat_mapper(self, path):
@@ -79,6 +79,9 @@ class CriteoDataset(torch.utils.data.Dataset):
                     feat_cnts[i][convert_numeric_feature(values[i])] += 1
                 for i in range(self.NUM_INT_FEATS + 1, self.NUM_FEATS + 1):
                     feat_cnts[i][values[i]] += 1
+
+        # print('==feat_cnts==')
+        # print(feat_cnts)
         feat_mapper = {i: {feat for feat, c in cnt.items() if c >= self.min_threshold} for i, cnt in feat_cnts.items()}
         feat_mapper = {i: {feat: idx for idx, feat in enumerate(cnt)} for i, cnt in feat_mapper.items()}
         defaults = {i: len(cnt) for i, cnt in feat_mapper.items()}
@@ -92,6 +95,7 @@ class CriteoDataset(torch.utils.data.Dataset):
             pbar.set_description('Create criteo dataset cache: setup lmdb')
             for line in pbar:
                 values = line.rstrip('\n').split('\t')
+                # values = line.rstrip('\n').split(',')
                 if len(values) != self.NUM_FEATS + 1:
                     continue
                 np_array = np.zeros(self.NUM_FEATS + 1, dtype=np.uint32)

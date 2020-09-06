@@ -12,7 +12,7 @@ target
 
 
 model
-data
+data/chkpt
 examples/.criteo
 venv
 __pycache__

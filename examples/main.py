@@ -200,11 +200,13 @@ if __name__ == '__main__':
     #      args.save_dir)
 
     main('criteo',
-         'D:\\BaiduNetdiskDownload\\criteo_dac_sample.txt',
-         'lr',
+         '../data/criteo/train.txt',
+         # 'D:\\BaiduNetdiskDownload\\criteo_dac_sample.txt',
+         # 'G:\\ctr_train_data\\criteo-dac\\train.100w.txt',
+         'afm',
          100,
          0.1,
-         100,
+         2048,
          1e-6,
          "cuda:0" if torch.cuda.is_available() else "cpu",
          '../data/chkpt')
