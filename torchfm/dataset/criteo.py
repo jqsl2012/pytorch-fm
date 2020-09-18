@@ -30,8 +30,11 @@ class CriteoDataset(torch.utils.data.Dataset):
     """
 
     def __init__(self, dataset_path=None, cache_path='.criteo', rebuild_cache=False, min_threshold=10):
-        self.NUM_FEATS = 39
-        self.NUM_INT_FEATS = 13
+        # self.NUM_FEATS = 39
+        # self.NUM_INT_FEATS = 13
+        self.NUM_FEATS = 62
+        self.NUM_INT_FEATS = 54
+
         self.min_threshold = min_threshold
         if rebuild_cache or not Path(cache_path).exists():
             shutil.rmtree(cache_path, ignore_errors=True)
@@ -72,7 +75,8 @@ class CriteoDataset(torch.utils.data.Dataset):
             pbar = tqdm(f, mininterval=1, smoothing=0.1)
             pbar.set_description('Create criteo dataset cache: counting features')
             for line in pbar:
-                values = line.rstrip('\n').split('\t')
+                # values = line.rstrip('\n').split('\t')
+                values = line.rstrip('\n').split(',')
                 if len(values) != self.NUM_FEATS + 1:
                     continue
                 for i in range(1, self.NUM_INT_FEATS + 1):
@@ -94,8 +98,8 @@ class CriteoDataset(torch.utils.data.Dataset):
             pbar = tqdm(f, mininterval=1, smoothing=0.1)
             pbar.set_description('Create criteo dataset cache: setup lmdb')
             for line in pbar:
-                values = line.rstrip('\n').split('\t')
-                # values = line.rstrip('\n').split(',')
+                # values = line.rstrip('\n').split('\t')
+                values = line.rstrip('\n').split(',')
                 if len(values) != self.NUM_FEATS + 1:
                     continue
                 np_array = np.zeros(self.NUM_FEATS + 1, dtype=np.uint32)
@@ -116,8 +120,9 @@ class CriteoDataset(torch.utils.data.Dataset):
 def convert_numeric_feature(val: str):
     if val == '':
         return 'NULL'
-    v = int(val)
+    v = float(val)
     if v > 2:
-        return str(int(math.log(v) ** 2))
+        # return str(int(math.log(v) ** 2))
+        return str((math.log(v) ** 2))
     else:
         return str(v - 2)

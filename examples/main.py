@@ -137,6 +137,19 @@ def test(model, data_loader, device):
             y = model(fields)
             targets.extend(target.tolist())
             predicts.extend(y.tolist())
+
+    from sklearn.metrics import classification_report
+    print(targets)
+    print(predicts)
+    arr = []
+    for x in predicts:
+        if x >= 0.5:
+            arr.append(1)
+        else:
+            arr.append(0)
+
+    print(classification_report(targets, arr))
+
     return roc_auc_score(targets, predicts)
 
 
