@@ -14,7 +14,7 @@ from torchfm.model.ffm import FieldAwareFactorizationMachineModel
 from torchfm.model.fm import FactorizationMachineModel
 from torchfm.model.fnfm import FieldAwareNeuralFactorizationMachineModel
 from torchfm.model.fnn import FactorizationSupportedNeuralNetworkModel
-from torchfm.model.hofm import HighOrderFactorizationMachineModel
+# from torchfm.model.hofm import HighOrderFactorizationMachineModel
 from torchfm.model.lr import LogisticRegressionModel
 from torchfm.model.ncf import NeuralCollaborativeFiltering
 from torchfm.model.nfm import NeuralFactorizationMachineModel
@@ -47,7 +47,8 @@ def get_model(name, dataset):
     elif name == 'fm':
         return FactorizationMachineModel(field_dims, embed_dim=16)
     elif name == 'hofm':
-        return HighOrderFactorizationMachineModel(field_dims, order=3, embed_dim=16)
+        # return HighOrderFactorizationMachineModel(field_dims, order=3, embed_dim=16)
+        return LogisticRegressionModel(field_dims)
     elif name == 'ffm':
         return FieldAwareFactorizationMachineModel(field_dims, embed_dim=4)
     elif name == 'fnn':
