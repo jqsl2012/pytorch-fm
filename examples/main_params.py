@@ -42,6 +42,7 @@ def get_model(name, dataset):
     Hyperparameters are empirically determined, not opitmized.
     """
     field_dims = dataset.field_dims
+    print('field_dims={}'.format(field_dims))
     if name == 'lr':
         return LogisticRegressionModel(field_dims)
     elif name == 'fm':
@@ -55,9 +56,9 @@ def get_model(name, dataset):
         return FactorizationSupportedNeuralNetworkModel(field_dims, embed_dim=16, mlp_dims=(16, 16), dropout=0.2)
     elif name == 'wd':
         return WideAndDeepModel(field_dims, embed_dim=16, mlp_dims=(16, 16), dropout=0.2)
-    elif name == 'ipnn':
+    elif name == 'ipnn':    # 比较有效果
         return ProductNeuralNetworkModel(field_dims, embed_dim=16, mlp_dims=(16,), method='inner', dropout=0.2)
-    elif name == 'opnn':
+    elif name == 'opnn':    # precision：86%，recall：16%
         return ProductNeuralNetworkModel(field_dims, embed_dim=16, mlp_dims=(16,), method='outer', dropout=0.2)
     elif name == 'dcn':
         return DeepCrossNetworkModel(field_dims, embed_dim=16, num_layers=3, mlp_dims=(16, 16), dropout=0.2)
@@ -71,7 +72,7 @@ def get_model(name, dataset):
                                             item_field_idx=dataset.item_field_idx)
     elif name == 'fnfm':
         return FieldAwareNeuralFactorizationMachineModel(field_dims, embed_dim=4, mlp_dims=(64,), dropouts=(0.2, 0.2))
-    elif name == 'dfm':
+    elif name == 'dfm':     # 效果比ipnn差一点点，但是已经很好了
         return DeepFactorizationMachineModel(field_dims, embed_dim=16, mlp_dims=(16, 16), dropout=0.2)
     elif name == 'xdfm':
         return ExtremeDeepFactorizationMachineModel(
@@ -138,6 +139,14 @@ def test(model, data_loader, device):
             y = model(fields)
             targets.extend(target.tolist())
             predicts.extend(y.tolist())
+
+    from sklearn.metrics import classification_report
+    arr = []
+    for x in predicts:
+        arr.append(1) if x >= 0.5 else arr.append(0)
+
+    print(classification_report(targets, arr))
+
     return roc_auc_score(targets, predicts)
 
 
@@ -150,7 +159,12 @@ def main(dataset_name,
          weight_decay,
          device,
          save_dir):
-    print('model_name={}'.format(model_name))
+    print('model_name={}, get_num_threads={}'.format(model_name,torch.get_num_thread()))
+    # https://www.jianshu.com/p/0b761be87e54
+    # set_num_threads()设置Pytorch进行CPU多线程并行计算时所占用的线程数。
+    # num_workers设置DataLoader在实现数据预处理的并行化的进程数，并没有设置线程。
+    # 查看服务器线程数：grep 'processor' /proc/cpuinfo | sort -u | wc -l
+    torch.set_num_threads(8)
     device = torch.device(device)
     dataset = get_dataset(dataset_name, dataset_path)
     train_length = int(len(dataset) * 0.8)
