@@ -77,7 +77,40 @@ avg / total       0.99      0.99      0.99     20000
 test auc: 0.9445906095458205
 
 # opnn
+epoch: 1 validation: auc: 0.963711550617814
+ 19%|████████████████████████▎                                                                                                        | 37/196 [04:29<19:18,  7.29s/it] 40%|███████████████████████████████████████████████████▉                                                                             | 79/196 [09:36<14:14,  7.30s/it] 63%|████████████████████████████████████████████████████████████████████████▏                                          | 123/196 [14:34<08:39,  7.11s/it, loss=0.0492] 98%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████▋  | 192/196 [19:36<00:24,  6.13s/it, loss=0.0492]100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 196/196 [19:56<00:00,  6.11s/it, loss=0.0492]
+100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 25/25 [00:21<00:00,  1.16it/s]
+             precision    recall  f1-score   support
 
+          0       1.00      1.00      1.00     49320
+          1       0.93      0.72      0.81       680
+
+avg / total       1.00      1.00      1.00     50000
+
+epoch: 2 validation: auc: 0.9826377260149801
+ 21%|███████████████████████████▋                                                                                                     | 42/196 [04:16<15:41,  6.11s/it] 39%|██████████████████████████████████████████████████▋                                                                              | 77/196 [07:52<12:09,  6.13s/it] 39%|██████████████████████████████████████████████████▋                                                                              | 77/196 [07:58<12:19,  6.21s/it]
+Traceback (most recent call last):
+  File "main_params.py", line 221, in <module>
+    args.save_dir)
+  File "main_params.py", line 188, in main
+    train(model, optimizer, train_data_loader, criterion, device)
+  File "main_params.py", line 127, in train
+    loss.backward()
+  File "/home/eduapp/anaconda3/lib/python3.6/site-packages/torch/tensor.py", line 185, in backward
+    torch.autograd.backward(self, gradient, retain_graph, create_graph)
+  File "/home/eduapp/anaconda3/lib/python3.6/site-packages/torch/autograd/__init__.py", line 127, in backward
+    allow_unreachable=True)  # allow_unreachable flag
+KeyboardInterrupt
+validation: best auc: 0.9528010641966135
+100%|██████████| 10/10 [00:00<00:00, 40.13it/s]
+             precision    recall  f1-score   support
+
+          0       1.00      0.99      0.99     19701
+          1       0.54      0.69      0.61       299
+
+avg / total       0.99      0.99      0.99     20000
+
+test auc: 0.9445906095458205
 
 # fm
 epoch: 17 validation: auc: 0.9825429616355498
