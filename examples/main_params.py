@@ -70,7 +70,7 @@ def get_model(name, dataset):
         return NeuralCollaborativeFiltering(field_dims, embed_dim=16, mlp_dims=(16, 16), dropout=0.2,
                                             user_field_idx=dataset.user_field_idx,
                                             item_field_idx=dataset.item_field_idx)
-    elif name == 'fnfm':
+    elif name == 'fnfm':    # 实验表明，该模型比现有的DeepFM、DCN和NFM等深度学习特征组合模型具有更强的表达能力
         return FieldAwareNeuralFactorizationMachineModel(field_dims, embed_dim=4, mlp_dims=(64,), dropouts=(0.2, 0.2))
     elif name == 'dfm':     # 效果比ipnn差一点点，但是已经很好了
         return DeepFactorizationMachineModel(field_dims, embed_dim=16, mlp_dims=(16, 16), dropout=0.2)
