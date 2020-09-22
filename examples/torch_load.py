@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from torchfm.dataset.avazu import AvazuDataset
 from torchfm.dataset.criteo import CriteoDataset
 from torchfm.dataset.movielens import MovieLens1MDataset, MovieLens20MDataset
-
+import time
 
 def get_dataset(name, path):
     if name == 'movielens1M':
@@ -14,7 +14,7 @@ def get_dataset(name, path):
     elif name == 'movielens20M':
         return MovieLens20MDataset(path)
     elif name == 'criteo':
-        return CriteoDataset(path)
+        return CriteoDataset(path, cache_path='.criteo_test')
     elif name == 'avazu':
         return AvazuDataset(path)
     else:
@@ -39,15 +39,9 @@ def test(model, data_loader, device):
             y = model(fields)
             targets.extend(target.tolist())
             predicts.extend(y.tolist())
-            # result_list.append(str(target.tolist()) + ',' + str(y.tolist()) + '\n')
 
-    print('========================')
-    # print(predicts)
-    # print(targets)
-
-    # result_list = []
+    print('========pred result list save to file================')
     for i in range(len(targets)):
-        # print('{}, {}, {}'.format(i, targets[i], predicts[i]))
         result_list.append(str(targets[i]) + ',' + str(predicts[i]) + '\n')
     file = open('result_list.txt', "w")
     file.writelines(result_list)
@@ -72,6 +66,8 @@ if __name__ == '__main__':
 
     dataset_path = '/home/eduapp/best_flow/20200907_more2more/all_features.train.1000.fe_output.csv'
     # dataset_path = '/home/eduapp/pytorch-fm/examples/all_features.train.1000.fe_output.csv'
+
+    t1 = time.time()
     dataset = get_dataset('criteo', dataset_path)
     train_length = int(len(dataset) * 0.8)
     valid_length = int(len(dataset) * 0.1)
@@ -79,6 +75,7 @@ if __name__ == '__main__':
     train_dataset, valid_dataset, test_dataset = torch.utils.data.random_split(
         dataset, (train_length, valid_length, test_length))
     test_data_loader = DataLoader(test_dataset, batch_size=2048, num_workers=0)
+    print('dataset time={}'.format(time.time() - t1))
 
     test(model, test_data_loader, device)
 

@@ -69,6 +69,7 @@ class CriteoDataset(torch.utils.data.Dataset):
                         # print('kv=={},{}'.format(key,value))
                         txn.put(key, value)
 
+    # 获取features mapping，特征映射关系
     def __get_feat_mapper(self, path):
         feat_cnts = defaultdict(lambda: defaultdict(int))
         with open(path) as f:
@@ -79,9 +80,9 @@ class CriteoDataset(torch.utils.data.Dataset):
                 values = line.rstrip('\n').split(',')
                 if len(values) != self.NUM_FEATS + 1:
                     continue
-                for i in range(1, self.NUM_INT_FEATS + 1):
+                for i in range(1, self.NUM_INT_FEATS + 1):  # 读取稀疏特征
                     feat_cnts[i][convert_numeric_feature(values[i])] += 1
-                for i in range(self.NUM_INT_FEATS + 1, self.NUM_FEATS + 1):
+                for i in range(self.NUM_INT_FEATS + 1, self.NUM_FEATS + 1): # 读取稠密特征
                     feat_cnts[i][values[i]] += 1
 
         # print('==feat_cnts==')
@@ -106,8 +107,10 @@ class CriteoDataset(torch.utils.data.Dataset):
                 np_array = np.zeros(self.NUM_FEATS + 1, dtype=np.uint32)
                 np_array[0] = int(values[0])
                 for i in range(1, self.NUM_INT_FEATS + 1):
+                    # TODO 这里是把原始特征值转换成索引吗？ 如果转换不了则使用原始默认值
                     np_array[i] = feat_mapper[i].get(convert_numeric_feature(values[i]), defaults[i])
                 for i in range(self.NUM_INT_FEATS + 1, self.NUM_FEATS + 1):
+                    # TODO 这里同上
                     np_array[i] = feat_mapper[i].get(values[i], defaults[i])
                 buffer.append((struct.pack('>I', item_idx), np_array.tobytes()))
                 item_idx += 1
