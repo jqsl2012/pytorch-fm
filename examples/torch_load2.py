@@ -14,8 +14,8 @@ def get_dataset(name, path):
     elif name == 'movielens20M':
         return MovieLens20MDataset(path)
     elif name == 'criteo':
-        # return CriteoDataset(path, cache_path='.criteo_test')
-        return CriteoDataset(path)
+        return CriteoDataset(path, cache_path='.criteo_test2')
+        # return CriteoDataset(path)
     elif name == 'avazu':
         return AvazuDataset(path)
     else:
@@ -27,7 +27,8 @@ def load_model():
     # save_path = '/home/eduapp/pytorch-fm/data/criteo/save_dir/lr.pt'
     save_path = '/home/eduapp/pytorch-fm/examples_prod/ipnn.pt'
     model = torch.load(save_path)
-    print(model.eval())
+    # print(model.eval())
+    print(model)
     return model
 
 
@@ -58,7 +59,7 @@ def test(model, data_loader, device):
 
     print(classification_report(targets, arr))
 
-    auc = roc_auc_score(targets, arr)
+    auc = roc_auc_score(targets, predicts)
     print('auc={}'.format(auc))
 
 
@@ -69,7 +70,8 @@ if __name__ == '__main__':
     dataset_path = '/home/eduapp/best_flow/20200907_more2more/all_features.train.1000.fe_output.csv'
     # dataset_path = '/home/eduapp/pytorch-fm/examples/all_features.train.1000.fe_output.csv'
     dataset_path = '/home/eduapp/best_flow/20200907_more2more/all_features_use_model_estimate_path.fe_output.csv'
-    dataset_path = '/home/eduapp/best_flow/20200907_more2more/all_features.train.fe_output.csv'
+    # dataset_path = '/home/eduapp/best_flow/20200907_more2more/all_features.train.fe_output.csv'
+    # dataset_path = '/home/eduapp/best_flow/20200907_more2more/all_features.train.fe_output_ipnn_test.csv'
 
     t1 = time.time()
     dataset = get_dataset('criteo', dataset_path)

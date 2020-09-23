@@ -22,7 +22,7 @@ class CriteoDataset(torch.utils.data.Dataset):
     :param dataset_path: criteo train.txt path.
     :param cache_path: lmdb cache path.
     :param rebuild_cache: If True, lmdb cache is refreshed.
-    :param min_threshold: infrequent feature threshold.
+    :param min_threshold: infrequent feature threshold.  罕见特征阈值，小于min_threshold的则用原始特征值，否则转化成索引，然后用词嵌入
 
     Reference:
         https://labs.criteo.com/2014/02/kaggle-display-advertising-challenge-dataset
@@ -43,18 +43,21 @@ class CriteoDataset(torch.utils.data.Dataset):
             self.__build_cache(dataset_path, cache_path)
         self.env = lmdb.open(cache_path, create=False, lock=False, readonly=True)
         with self.env.begin(write=False) as txn:
-            self.length = txn.stat()['entries'] - 1
-            self.field_dims = np.frombuffer(txn.get(b'field_dims'), dtype=np.uint32)
+            self.length = txn.stat()['entries'] - 1     # 统计总训练记录数
+            self.field_dims = np.frombuffer(txn.get(b'field_dims'), dtype=np.uint32)    # 统计每个字段的维度
 
+    # 返回一条数据或一个样本
     def __getitem__(self, index):
         with self.env.begin(write=False) as txn:
             np_array = np.frombuffer(
                 txn.get(struct.pack('>I', index)), dtype=np.uint32).astype(dtype=np.long)
-        return np_array[1:], np_array[0]
+        return np_array[1:], np_array[0]    # 特征,标签
 
+    # 返回样本数量
     def __len__(self):
         return self.length
 
+    # 把训练数据存储到lmdb这个持久化缓存中
     def __build_cache(self, path, cache_path):
         feat_mapper, defaults = self.__get_feat_mapper(path)
         with lmdb.open(cache_path, map_size=1e11) as env:
@@ -93,7 +96,8 @@ class CriteoDataset(torch.utils.data.Dataset):
         return feat_mapper, defaults
 
     # 1e11 <=> 1099511627776
-    def __yield_buffer(self, path, feat_mapper, defaults, buffer_size=1e11):
+    # 读取实际的训练数据文件，转化成字节数据后返回
+    def __yield_buffer(self, path, feat_mapper, defaults, buffer_size=int(1e5)):
         item_idx = 0
         buffer = list()
         with open(path) as f:
@@ -105,7 +109,7 @@ class CriteoDataset(torch.utils.data.Dataset):
                 if len(values) != self.NUM_FEATS + 1:
                     continue
                 np_array = np.zeros(self.NUM_FEATS + 1, dtype=np.uint32)
-                np_array[0] = int(values[0])
+                np_array[0] = int(values[0])    # 第一列的label
                 for i in range(1, self.NUM_INT_FEATS + 1):
                     # TODO 这里是把原始特征值转换成索引吗？ 如果转换不了则使用原始默认值
                     np_array[i] = feat_mapper[i].get(convert_numeric_feature(values[i]), defaults[i])

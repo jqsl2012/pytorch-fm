@@ -112,7 +112,7 @@ class EarlyStopper(object):
 
 
 def train(model, optimizer, data_loader, criterion, device, log_interval=100):
-    model.train()
+    model.train()   # 训练时候要先train()
     total_loss = 0
     tk0 = tqdm.tqdm(data_loader, smoothing=0, mininterval=1.0)
     for i, (fields, target) in enumerate(tk0):
@@ -131,7 +131,7 @@ def train(model, optimizer, data_loader, criterion, device, log_interval=100):
 
 
 def test(model, data_loader, device):
-    model.eval()
+    model.eval()    # 测试评估时候要先eval()，让pytorch把DNN的梯度固定住
     targets, predicts = list(), list()
     with torch.no_grad():
         for fields, target in tqdm.tqdm(data_loader, smoothing=0, mininterval=1.0):
@@ -159,12 +159,12 @@ def main(dataset_name,
          weight_decay,
          device,
          save_dir):
-    print('model_name={}, get_num_threads={}'.format(model_name,torch.get_num_thread()))
+    # print('model_name={}, get_num_threads={}'.format(model_name,torch.get_num_thread()))
     # https://www.jianshu.com/p/0b761be87e54
     # set_num_threads()设置Pytorch进行CPU多线程并行计算时所占用的线程数。
     # num_workers设置DataLoader在实现数据预处理的并行化的进程数，并没有设置线程。
     # 查看服务器线程数：grep 'processor' /proc/cpuinfo | sort -u | wc -l
-    torch.set_num_threads(8)
+    # torch.set_num_threads(8)
     device = torch.device(device)
     dataset = get_dataset(dataset_name, dataset_path)
     train_length = int(len(dataset) * 0.8)
