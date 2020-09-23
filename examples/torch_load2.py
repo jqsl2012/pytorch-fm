@@ -73,6 +73,8 @@ if __name__ == '__main__':
     # dataset_path = '/home/eduapp/best_flow/20200907_more2more/all_features.train.fe_output.csv'
     # dataset_path = '/home/eduapp/best_flow/20200907_more2more/all_features.train.fe_output_ipnn_test.csv'
 
+    dataset_path = '/home/eduapp/pytorch-fm/examples/all_features_use_model_estimate.fe_output.10w.csv'
+
     t1 = time.time()
     dataset = get_dataset('criteo', dataset_path)
     train_length = int(len(dataset) * 0.1)
@@ -83,5 +85,5 @@ if __name__ == '__main__':
     test_data_loader = DataLoader(test_dataset, batch_size=2048, num_workers=0)
     print('dataset time={}'.format(time.time() - t1))
 
-    test(model, test_data_loader, device)
+    # test(model, test_data_loader, device)
 
