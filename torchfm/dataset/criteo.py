@@ -9,7 +9,7 @@ import lmdb
 import numpy as np
 import torch.utils.data
 from tqdm import tqdm
-
+import json
 
 class CriteoDataset(torch.utils.data.Dataset):
     """
@@ -59,11 +59,36 @@ class CriteoDataset(torch.utils.data.Dataset):
 
     # 把训练数据存储到lmdb这个持久化缓存中
     def __build_cache(self, path, cache_path):
-        feat_mapper, defaults = self.__get_feat_mapper(path)
+        # feat_mapper, defaults存储成json写入文件
+        if True:
+            feat_mapper, defaults = self.__get_feat_mapper(path)
+
+            np.save('feat_mapper.npy', feat_mapper)
+            np.save('defaults.npy', defaults)
+
+            # json_obj = {'feat_mapper': feat_mapper, 'defaults': defaults}
+            # json_str = json.dumps(json_obj) + '\n'
+            # feat_mapper_file = open('/home/eduapp/pytorch-fm/examples/feat_mapper.txt', 'w')
+            # feat_mapper_file.write(json_str)
+            # feat_mapper_file.close()
+
+        if True:
+            feat_mapper = np.load('feat_mapper.npy', allow_pickle=True).item()
+            defaults = np.load('defaults.npy', allow_pickle=True).item()
+            # feat_mapper_file = open('/home/eduapp/pytorch-fm/examples/feat_mapper.txt', 'r', encoding='utf-8')
+            # lines = feat_mapper_file.readlines()
+            # json_obj = json.loads(lines[0].strip('\n'))
+            # with open('/home/eduapp/pytorch-fm/examples/feat_mapper.txt', 'rb') as f:
+            #     json_obj = json.load(f)
+            #     print(type(json_obj))
+            # feat_mapper, defaults = json_obj['feat_mapper'], json_obj['defaults']
+            # feat_mapper_file.close()
+
+
         with lmdb.open(cache_path, map_size=1e11) as env:
             field_dims = np.zeros(self.NUM_FEATS, dtype=np.uint32)
             for i, fm in feat_mapper.items():
-                field_dims[i - 1] = len(fm) + 1
+                field_dims[int(i) - 1] = len(fm) + 1
             with env.begin(write=True) as txn:
                 txn.put(b'field_dims', field_dims.tobytes())
             for buffer in self.__yield_buffer(path, feat_mapper, defaults):
