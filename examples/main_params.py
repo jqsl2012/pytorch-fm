@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 
 from torchfm.dataset.avazu import AvazuDataset
 from torchfm.dataset.criteo import CriteoDataset
+from torchfm.dataset.flow import FlowDataset
 from torchfm.dataset.movielens import MovieLens1MDataset, MovieLens20MDataset
 from torchfm.model.afi import AutomaticFeatureInteractionModel
 from torchfm.model.afm import AttentionalFactorizationMachineModel
@@ -29,6 +30,8 @@ def get_dataset(name, path):
         return MovieLens1MDataset(path)
     elif name == 'movielens20M':
         return MovieLens20MDataset(path)
+    elif name == 'flow':
+        return FlowDataset(path)
     elif name == 'criteo':
         return CriteoDataset(path)
     elif name == 'avazu':

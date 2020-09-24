@@ -9,3 +9,13 @@ c. 拿离线模型，和data的head -n N或tail -n N份数据做离线模型评�
 换了数据却不行呢？？？
 
 1. 尝试用训练的方式去预测离线模型？
+
+初步预测是model save/load的问题，即 训练后存储的模型没有被评估时候正确的加载。
+https://pytorch.org/tutorials/beginner/saving_loading_models.html#saving-loading-model-for-inference
+但是，如果是模型加载的问题，那为什么评估的时候脚本load模型能够对训练数据进行正确评估预测呢？这就说明load模型
+是没有问题的。
+经过反复试验，且试验了load_state_dict这种官网推荐的加载模型方式，依然没用。
+反复试验只有使用原来的数据才能进行准确评估，所以一切的问题都指向criteo.py处理数据的方式，
+尤其是        feat_mapper, defaults = self.__get_feat_mapper(path)
+有问题，因为原始的criteo数据的稀疏特征是编码了的，猜测这里是用索引编号来解码，所以训练的模型仅仅是对原始的
+数据有效果，对新提供的数据是没有效果的，即使用原始的数据重新cache一次都不行，因为别忘了，我们用了random_split。

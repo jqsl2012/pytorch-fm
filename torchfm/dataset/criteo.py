@@ -115,6 +115,11 @@ class CriteoDataset(torch.utils.data.Dataset):
 
         # print('==feat_cnts==')
         # print(feat_cnts)
+        #i是特征索引，feat是特征的值
+        """
+        {1: {'-2.0': 0}, 2: {}, 3: {'-2.0': 0}, 4: {}, 5: {'-2.0': 0}, 6: {'-2.0': 0}, 7: {}, 8: {}, 9: {}, 10: {}, 11: {'-2.0': 0}, 12: {}, 13: {'-2.0': 0}, 14: {}, 15: {}, 16: {}, 17: {}, 18: {}, 19: {}, 20: {}, 21: {}, 22: {}, 23: {}, 24: {}, 25: {}, 26: {}, 27: {}, 28: {}, 29: {}, 30: {}, 31: {}, 32: {}, 33: {}, 34: {}, 35: {}, 36: {}, 37: {}, 38: {'-2.0': 0}, 39: {}, 40: {}, 41: {}, 42: {}, 43: {}, 44: {}, 45: {}, 46: {}, 47: {}, 48: {}, 49: {}, 50: {}, 51: {}, 52: {}, 53: {}, 54: {}, 55: {}, 56: {}, 57: {}, 58: {}, 59: {'5595': 0}, 60: {}, 61: {}, 62: {}}
+        {1: 1, 2: 0, 3: 1, 4: 0, 5: 1, 6: 1, 7: 0, 8: 0, 9: 0, 10: 0, 11: 1, 12: 0, 13: 1, 14: 0, 15: 0, 16: 0, 17: 0, 18: 0, 19: 0, 20: 0, 21: 0, 22: 0, 23: 0, 24: 0, 25: 0, 26: 0, 27: 0, 28: 0, 29: 0, 30: 0, 31: 0, 32: 0, 33: 0, 34: 0, 35: 0, 36: 0, 37: 0, 38: 1, 39: 0, 40: 0, 41: 0, 42: 0, 43: 0, 44: 0, 45: 0, 46: 0, 47: 0, 48: 0, 49: 0, 50: 0, 51: 0, 52: 0, 53: 0, 54: 0, 55: 0, 56: 0, 57: 0, 58: 0, 59: 1, 60: 0, 61: 0, 62: 0}
+        """
         feat_mapper = {i: {feat for feat, c in cnt.items() if c >= self.min_threshold} for i, cnt in feat_cnts.items()}
         feat_mapper = {i: {feat: idx for idx, feat in enumerate(cnt)} for i, cnt in feat_mapper.items()}
         defaults = {i: len(cnt) for i, cnt in feat_mapper.items()}
@@ -141,6 +146,27 @@ class CriteoDataset(torch.utils.data.Dataset):
                 for i in range(self.NUM_INT_FEATS + 1, self.NUM_FEATS + 1):
                     # TODO 这里同上
                     np_array[i] = feat_mapper[i].get(values[i], defaults[i])
+
+                #TODO 这里为什么要得到所有特征值的索引呢？np_array是索引。item_idx是每行数据自增？为啥要自增？
+                # 用自增是因为每行数据以自增id存储到缓存
+                # 稀疏和稠密特征转换成索引np_array，是为了做词嵌入，词嵌入能够做到特征的高维组合，扔到DNN中进行全连接训练，
+                # 而这是LR,FM等做不到的。
+                # 既然知道了训练时候特征的转换为索引，为词嵌入做准备，那么我们新来的数据也要做类似的事情，才能用训练好的模型进行预测
+                # 否则你拿另一份数据来预测是会有问题的。
+                """
+                np_array = [  0   0   1   0   9  10   1 457 185  41   1   0   2   1   0 873 369 235
+                             580 822 265 679 506 144  44 140 682 849 135 135  84  28 392 126 114 346
+                              95  91  43 317 554 407 148 400 418 232 161 190 245 629 254  75 793   7
+                             292  12 664 482 127  63   0   0  25]
+                 np_array[0]=label
+                 np_array[1:]=所有特征值的索引
+                 
+                 新来的数据包括未见过的测试数据是否是在这里转化为索引np_array？
+                 且使用上面老的数据生成的（feat_mapper, defaults）这个是老数据生成的，新数据只用，不改变他们，
+                 如果改变了，则预测就不准的了。。。
+                 1. 老数据生成的feat_mapper, defaults得先存起来
+                 2. 新来的数据使用，那么新来的数据的特征就转换成了np_array
+                """
                 buffer.append((struct.pack('>I', item_idx), np_array.tobytes()))
                 item_idx += 1
                 if item_idx % buffer_size == 0:
@@ -149,6 +175,7 @@ class CriteoDataset(torch.utils.data.Dataset):
             yield buffer
 
 
+# 稠密特征被这样处理了。
 @lru_cache(maxsize=None)
 def convert_numeric_feature(val: str):
     if val == '':
