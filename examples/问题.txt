@@ -19,3 +19,16 @@ https://pytorch.org/tutorials/beginner/saving_loading_models.html#saving-loading
 尤其是        feat_mapper, defaults = self.__get_feat_mapper(path)
 有问题，因为原始的criteo数据的稀疏特征是编码了的，猜测这里是用索引编号来解码，所以训练的模型仅仅是对原始的
 数据有效果，对新提供的数据是没有效果的，即使用原始的数据重新cache一次都不行，因为别忘了，我们用了random_split。
+
+1. 解决了训练数据和此框架模型的顺序不对的问题，虽然拿新的测试数据用离线模型评测精确率和召回率不是0了，
+但是依然只有20%左右，咋回事呢？
+2. 然后拿https://deepctr-doc.readthedocs.io/en/latest/Quick-Start.html 框架去跑，发现依然有这个问题，
+所以突然怀疑是正负样本不均衡的问题导致的！！
+可以去google搜索一下：
+    pytorch 类别不均衡
+    tensorflow 类别不均衡
+都有相应的解决办法。
+所以，应该是这个问题导致的，否则为什么训练数据集上的效果很高，但是到了新数据集上效果就很差了呢？
+
+
+
