@@ -2,6 +2,9 @@ import torch
 import tqdm
 from sklearn.metrics import roc_auc_score
 from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, WeightedRandomSampler
+import pandas as pd
+import numpy as np
 
 from torchfm.dataset.avazu import AvazuDataset
 from torchfm.dataset.criteo import CriteoDataset
@@ -153,6 +156,43 @@ def test(model, data_loader, device):
     return roc_auc_score(targets, predicts)
 
 
+def sampler(list_data):
+    # target = pd.read_csv('/home/eduapp/pytorch-fm/examples/all_features_use_model_estimate.fe_output.40w.csv',
+    #                      usecols=[0], header=None)
+    target = np.array(list_data)
+    # print(target)
+    # print(type(target))
+    # target = target.to_numpy()
+    # 1/0
+    print('target train 0/1: {}/{}'.format(len(np.where(target == 0)[0]), len(np.where(target == 1)[0])))
+    class_sample_count = np.array([len(np.where(target == t)[0]) for t in np.unique(target)])
+    weight = 1. / class_sample_count
+    print('{}, {}'.format(class_sample_count, weight))
+    samples_weight = np.array([weight[t] for t in target])
+    samples_weight = torch.from_numpy(samples_weight)
+    samples_weight = samples_weight.double()
+    print(samples_weight)
+    sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
+    return sampler
+
+
+def sampler2(labels):
+    target = np.array(labels)
+    print('target train 0/1: {}/{}'.format(len(np.where(target == 0)[0]), len(np.where(target == 1)[0])))
+
+    # Let there be 9 samples and 1 sample in class 0 and 1 respectively
+    class_counts = [len(np.where(target == 0)[0]), len(np.where(target == 1)[0])]
+    print('class_counts', class_counts)
+    num_samples = len(labels)
+    print('num_samples', num_samples)
+    # labels = [0, 0, ..., 0, 1]  # corresponding labels of samples
+
+    class_weights = [num_samples / class_counts[i] for i in range(len(class_counts))]
+    weights = [class_weights[labels[i]] for i in range(int(num_samples))]
+    sampler = WeightedRandomSampler(torch.DoubleTensor(weights), int(num_samples))
+    return sampler
+
+
 def main(dataset_name,
          dataset_path,
          model_name,
@@ -162,6 +202,7 @@ def main(dataset_name,
          weight_decay,
          device,
          save_dir):
+
     # print('model_name={}, get_num_threads={}'.format(model_name,torch.get_num_thread()))
     # https://www.jianshu.com/p/0b761be87e54
     # set_num_threads()设置Pytorch进行CPU多线程并行计算时所占用的线程数。
@@ -175,7 +216,22 @@ def main(dataset_name,
     test_length = len(dataset) - train_length - valid_length
     train_dataset, valid_dataset, test_dataset = torch.utils.data.random_split(
         dataset, (train_length, valid_length, test_length))
-    train_data_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0)
+
+    print('train_dataset.__len__()', train_dataset.__len__())
+    print('train_dataset.__getitem__(1)', train_dataset.__getitem__(1)[1])
+    train_dataset_labels = []
+    for i in range(train_dataset.__len__()):
+        # print(train_dataset.__getitem__(i)[1])
+        train_dataset_labels.append(train_dataset.__getitem__(i)[1])
+    1 / 0
+
+    # weights = torch.FloatTensor([1, 100])
+    # train_sampler = WeightedRandomSampler(weights, len(train_dataset), replacement=True)
+
+    # train_sampler = torch.utils.data.sampler.SubsetRandomSampler(np.random.choice(range(len(train_dataset)), len(train_dataset)))
+
+    train_data_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, sampler=sampler(train_dataset_labels))
+    # train_data_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, sampler=train_sampler)
     valid_data_loader = DataLoader(valid_dataset, batch_size=batch_size, num_workers=0)
     test_data_loader = DataLoader(test_dataset, batch_size=batch_size, num_workers=0)
     model = get_model(model_name, dataset).to(device)
