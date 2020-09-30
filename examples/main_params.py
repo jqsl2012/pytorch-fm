@@ -208,6 +208,8 @@ def main(dataset_name,
     # set_num_threads()设置Pytorch进行CPU多线程并行计算时所占用的线程数。
     # num_workers设置DataLoader在实现数据预处理的并行化的进程数，并没有设置线程。
     # 查看服务器线程数：grep 'processor' /proc/cpuinfo | sort -u | wc -l
+    # https://pytorch.org/docs/stable/generated/torch.set_num_threads.html
+    # https://www.programcreek.com/python/example/101245/torch.set_num_threads
     # torch.set_num_threads(8)
     device = torch.device(device)
     dataset = get_dataset(dataset_name, dataset_path)
@@ -229,6 +231,13 @@ def main(dataset_name,
     # train_sampler = WeightedRandomSampler(weights, len(train_dataset), replacement=True)
 
     # train_sampler = torch.utils.data.sampler.SubsetRandomSampler(np.random.choice(range(len(train_dataset)), len(train_dataset)))
+
+    from torch.utils.data import DataLoader, WeightedRandomSampler
+    from torch.utils.data.sampler import SubsetRandomSampler
+
+    sampler = SubsetRandomSampler(range(train_length))
+    sampler = SubsetRandomSampler(range(train_length, train_length + valid_length))
+
 
     train_data_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, sampler=sampler(train_dataset_labels))
     # train_data_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, sampler=train_sampler)
