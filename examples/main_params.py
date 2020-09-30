@@ -109,6 +109,7 @@ class EarlyStopper(object):
             self.best_accuracy = accuracy
             self.trial_counter = 0
             torch.save(model, self.save_path)
+            print('save model')
             return True
         elif self.trial_counter + 1 < self.num_trials:
             self.trial_counter += 1
@@ -146,14 +147,17 @@ def test(model, data_loader, device):
             targets.extend(target.tolist())
             predicts.extend(y.tolist())
 
-    from sklearn.metrics import classification_report
+    from sklearn.metrics import classification_report, precision_score
     arr = []
     for x in predicts:
         arr.append(1) if x >= 0.5 else arr.append(0)
 
     print(classification_report(targets, arr))
-
-    return roc_auc_score(targets, predicts)
+    precision = precision_score(targets, arr)#predicts)
+    auc = roc_auc_score(targets, predicts)
+    print('precision: {}, auc: {}'.format(precision, auc))
+    return precision
+    # return roc_auc_score(targets, predicts)
 
 
 def sampler(list_data):
