@@ -239,8 +239,10 @@ def main(dataset_name,
     from torch.utils.data import DataLoader, WeightedRandomSampler
     from torch.utils.data.sampler import SubsetRandomSampler
 
+    # https://github.com/chenxijun1029/DeepFM_with_PyTorch/blob/master/main.py
+    # 提出了SubsetRandomSampler，貌似比WeightedRandomSampler效果要好很多
     sampler = SubsetRandomSampler(range(train_length))
-    sampler = SubsetRandomSampler(range(train_length, train_length + valid_length))
+    sampler = SubsetRandomSampler(range(train_length, valid_length))
 
 
     train_data_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, sampler=sampler(train_dataset_labels))

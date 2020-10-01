@@ -1,0 +1,15 @@
+
+# 大规模推荐模型训练工具
+https://github.com/PaddlePaddle/PaddleRec/tree/master/models
+# 这个库虽然是腾讯大佬做的，但是模型精度没有达到很高
+https://github.com/nzc/dnn_ctr/issues/15
+# 这个库也即是本项目，BUG不少。。。精度不够
+https://github.com/rixwew/pytorch-fm
+# 这个库是tensorflow的，是IPNN论文的作者开源的，开源试试。DeepFM论文没有开源dfm的项目
+https://github.com/Atomu2014/product-nets/blob/master/python/main.py
+# 这个和本项目类似，算是早期的一个博士写的，但是精度不够啊。。。
+https://github.com/yyHaker/RecommendationSystem/tree/master/models
+http://vlambda.com/wz_7irzCheCUaW.html
+
+# The Top 18 Learning To Rank Open Source Projects
+https://awesomeopensource.com/projects/learning-to-rank
