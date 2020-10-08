@@ -103,7 +103,11 @@ class CriteoDataset(torch.utils.data.Dataset):
         with open(path) as f:
             pbar = tqdm(f, mininterval=1, smoothing=0.1)
             pbar.set_description('Create criteo dataset cache: counting features')
+            skip = -1
             for line in pbar:
+                skip = skip + 1
+                if skip == 0:
+                    continue
                 # values = line.rstrip('\n').split('\t')
                 values = line.rstrip('\n').split(',')
                 if len(values) != self.NUM_FEATS + 1:
@@ -133,7 +137,11 @@ class CriteoDataset(torch.utils.data.Dataset):
         with open(path) as f:
             pbar = tqdm(f, mininterval=1, smoothing=0.1)
             pbar.set_description('Create criteo dataset cache: setup lmdb')
+            skip = -1
             for line in pbar:
+                skip = skip+1
+                if skip == 0:
+                    continue
                 # values = line.rstrip('\n').split('\t')
                 values = line.rstrip('\n').split(',')
                 if len(values) != self.NUM_FEATS + 1:
