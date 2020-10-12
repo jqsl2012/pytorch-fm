@@ -1,6 +1,6 @@
-# import torch
-# import random
-#
+import torch
+import random
+
 # n_train = 22#len(10)
 # split = n_train // 3
 # print(split)
@@ -9,27 +9,28 @@
 # valid_sampler = torch.utils.data.sampler.SubsetRandomSampler(indices[:split])
 # # train_loader = DataLoader(..., sampler=train_sampler, ...)
 # # valid_loader = DataLoader(..., sampler=valid_sampler, ...)
-from collections import defaultdict
 
-if 1==2:
-    import random as rd
+print('a=', 1)
 
-    for i in range(100):
-        label = 1 if rd.random() >= 0.5 else 0
+from sklearn import preprocessing
+from pickle import dump, dumps
+from pickle import load
+le = preprocessing.LabelEncoder()
+print(le.fit(["paris", "paris", "tokyo", "amsterdam"]))
+print(le.transform(["tokyo", "tokyo", "paris"]))
+print(list(le.inverse_transform([2, 2, 1])))
 
-        line = 'feat_idx:1 '
-        # line = line + ' feat_idx:1 '
-        # line = line + 'feat_value:' + str(rd.random()) + ' '
-        line = line + 'feat_value:' + str(rd.random()) + ' '
-        line = line + 'label:' + str(label)
-        print(line)
+print(le.fit_transform(['a', 'b', 'c', 'd']))
 
-if 1==1:
-    # arr = []
-    feat_cnts = defaultdict(lambda: defaultdict(int))
+# save the scaler
+dump(le, open('LabelEncoder.pkl', 'wb'))
 
-    # arr[0][0] = 1
-    feat_cnts[13][1] = 1
-    # feat_cnts[0].append(2)
-    print(feat_cnts)
-    print(feat_cnts.items())
+le = load(open('LabelEncoder.pkl', 'rb'))
+# print(le.fit(['c', 'd', 'e']))
+print(le.transform(['c', 'd'])) # 正确写法
+
+dic = dict(zip(le.classes_, le.transform(le.classes_)))
+print(dic)
+
+print(le.transform(['c', 'd', 'e', 'f'])) # 正确写法
+# print(le.fit_transform(['c', 'd'])) # 错误写法，fit会导致已sabe的preprocessing被初始化
