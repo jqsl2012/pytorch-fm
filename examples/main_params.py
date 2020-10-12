@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 from torch.utils.data import DataLoader, WeightedRandomSampler
 import pandas as pd
 import numpy as np
+from sklearn.utils.class_weight import compute_sample_weight
 
 from torchfm.dataset.avazu import AvazuDataset
 from torchfm.dataset.criteo import CriteoDataset
@@ -187,6 +188,7 @@ def sampler2(labels):
     # Let there be 9 samples and 1 sample in class 0 and 1 respectively
     class_counts = [len(np.where(target == 0)[0]), len(np.where(target == 1)[0])]
     print('class_counts', class_counts)
+    #num_samples = sum(len(labels))
     num_samples = len(labels)
     print('num_samples', num_samples)
     # labels = [0, 0, ..., 0, 1]  # corresponding labels of samples
@@ -194,6 +196,11 @@ def sampler2(labels):
     class_weights = [num_samples / class_counts[i] for i in range(len(class_counts))]
     weights = [class_weights[labels[i]] for i in range(int(num_samples))]
     sampler = WeightedRandomSampler(torch.DoubleTensor(weights), int(num_samples))
+    return sampler
+
+def sampler3(labels):
+    weights = compute_sample_weight(class_weight='balanced', y=labels)
+    sampler = WeightedRandomSampler(torch.DoubleTensor(weights), len(labels), replacement=False)
     return sampler
 
 
@@ -245,12 +252,14 @@ def main(dataset_name,
     sampler = SubsetRandomSampler(range(train_length, valid_length))
 
 
-    train_data_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, sampler=sampler(train_dataset_labels))
+    train_data_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, sampler=sampler(train_dataset_labels), shuffle=False)
     # train_data_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, sampler=train_sampler)
     valid_data_loader = DataLoader(valid_dataset, batch_size=batch_size, num_workers=0)
     test_data_loader = DataLoader(test_dataset, batch_size=batch_size, num_workers=0)
     model = get_model(model_name, dataset).to(device)
-    criterion = torch.nn.BCELoss()
+
+    weight = 1.0 / torch.Tensor([3711, 7107, 2942], dtype=torch.float)
+    criterion = torch.nn.BCELoss(weight=weight)
     optimizer = torch.optim.Adam(params=model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     early_stopper = EarlyStopper(num_trials=2, save_path=f'{save_dir}/{model_name}.pt')
     for epoch_i in range(epoch):

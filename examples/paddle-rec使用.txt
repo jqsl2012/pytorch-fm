@@ -1,3 +1,12 @@
+https://www.paddlepaddle.org.cn/
+
 pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
 python -m pip install paddle-rec -i https://mirror.baidu.com/pypi/simple
 python -m paddlerec.run -m models/rank/dnn/config.yaml
+
+
+git clone https://github.com/PaddlePaddle/PaddleRec/
+cd PaddleRec
+python setup.py install
+
+python -m paddlerec.run -m models/rank/deepfm/config.yaml

@@ -5,3 +5,11 @@ https://www.cnblogs.com/marsggbo/p/11308889.html
 https://stackoverflow.com/questions/60812032/using-weightedrandomsampler-in-pytorch
 https://blog.csdn.net/TH_NUM/article/details/80877772
 https://pytorch.org/docs/stable/data.html
+
+# 如何应对深度学习中的数据分布不平衡问题
+# WeightedRandomSampler BCELoss，通常用其中一个办法即可
+https://xiangqianma.github.io/shen-du-xue-xi/ji-chu-zhi-shi/dui-shu-ju-bu-ping-heng-de-ying-dui/
+https://stackoverflow.com/questions/47399350/how-does-sample-weight-compare-to-class-weight-in-scikit-learn?rq=1
+
+WeightedRandomSampler：采样的目的是让模型把一个未知的预测样本分到正类的概率即权重要高，分到
+    负类的概率即权重要低。而不是一样的权重，那样正负样本不均衡的情况下，模型的预测能力会很低。

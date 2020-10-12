@@ -10,6 +10,12 @@ https://github.com/Atomu2014/product-nets/blob/master/python/main.py
 # 这个和本项目类似，算是早期的一个博士写的，但是精度不够啊。。。
 https://github.com/yyHaker/RecommendationSystem/tree/master/models
 http://vlambda.com/wz_7irzCheCUaW.html
+# 和本项目类似，用到了SubsetRandomSampler，但我用貌似没啥效果。。。
+https://github.com/chenxijun1029/DeepFM_with_PyTorch/blob/master/main.py
+
 
 # The Top 18 Learning To Rank Open Source Projects
 https://awesomeopensource.com/projects/learning-to-rank
+
+# 发现pytorch的models更多的是做图片识别检测方面的事情，做ctr的很少。
+https://pytorch.org/docs/stable/torchvision/models.html
