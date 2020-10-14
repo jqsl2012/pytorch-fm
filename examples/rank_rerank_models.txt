@@ -19,3 +19,7 @@ https://awesomeopensource.com/projects/learning-to-rank
 
 # 发现pytorch的models更多的是做图片识别检测方面的事情，做ctr的很少。
 https://pytorch.org/docs/stable/torchvision/models.html
+
+
+# 推荐算法炼丹笔记：CTR点击率预估系列入门手册
+https://zhuanlan.zhihu.com/p/243243145
