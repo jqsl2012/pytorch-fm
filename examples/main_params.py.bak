@@ -2,17 +2,14 @@ import torch
 import tqdm
 from sklearn.metrics import roc_auc_score
 from torch.utils.data import DataLoader
-
-#from torch.utils.data import sampler
 from torch.utils.data import DataLoader, WeightedRandomSampler
-from torch.utils.data.sampler import SubsetRandomSampler
 import pandas as pd
 import numpy as np
 from sklearn.utils.class_weight import compute_sample_weight
 
-
 from torchfm.dataset.avazu import AvazuDataset
 from torchfm.dataset.criteo import CriteoDataset
+from torchfm.dataset.flow import FlowDataset
 from torchfm.dataset.movielens import MovieLens1MDataset, MovieLens20MDataset
 from torchfm.model.afi import AutomaticFeatureInteractionModel
 from torchfm.model.afm import AttentionalFactorizationMachineModel
@@ -22,7 +19,7 @@ from torchfm.model.ffm import FieldAwareFactorizationMachineModel
 from torchfm.model.fm import FactorizationMachineModel
 from torchfm.model.fnfm import FieldAwareNeuralFactorizationMachineModel
 from torchfm.model.fnn import FactorizationSupportedNeuralNetworkModel
-#from torchfm.model.hofm import HighOrderFactorizationMachineModel
+# from torchfm.model.hofm import HighOrderFactorizationMachineModel
 from torchfm.model.lr import LogisticRegressionModel
 from torchfm.model.ncf import NeuralCollaborativeFiltering
 from torchfm.model.nfm import NeuralFactorizationMachineModel
@@ -30,7 +27,6 @@ from torchfm.model.pnn import ProductNeuralNetworkModel
 from torchfm.model.wd import WideAndDeepModel
 from torchfm.model.xdfm import ExtremeDeepFactorizationMachineModel
 from torchfm.model.afn import AdaptiveFactorizationNetwork
-from torchfm.dataset.flow import FlowDataset
 
 
 def get_dataset(name, path):
@@ -41,7 +37,7 @@ def get_dataset(name, path):
     elif name == 'flow':
         return FlowDataset(path)
     elif name == 'criteo':
-        return CriteoDataset(path, cache_path='.criteo')
+        return CriteoDataset(path)
     elif name == 'avazu':
         return AvazuDataset(path)
     else:
@@ -53,26 +49,23 @@ def get_model(name, dataset):
     Hyperparameters are empirically determined, not opitmized.
     """
     field_dims = dataset.field_dims
-    print('field_dims={}, {}'.format(type(field_dims), field_dims.tolist()))
-    #1/0
-
+    print('field_dims={}'.format(field_dims))
     if name == 'lr':
         return LogisticRegressionModel(field_dims)
     elif name == 'fm':
         return FactorizationMachineModel(field_dims, embed_dim=16)
     elif name == 'hofm':
-        return HighOrderFactorizationMachineModel(field_dims, order=3, embed_dim=16)
+        # return HighOrderFactorizationMachineModel(field_dims, order=3, embed_dim=16)
+        return LogisticRegressionModel(field_dims)
     elif name == 'ffm':
         return FieldAwareFactorizationMachineModel(field_dims, embed_dim=4)
     elif name == 'fnn':
         return FactorizationSupportedNeuralNetworkModel(field_dims, embed_dim=16, mlp_dims=(16, 16), dropout=0.2)
     elif name == 'wd':
         return WideAndDeepModel(field_dims, embed_dim=16, mlp_dims=(16, 16), dropout=0.2)
-    elif name == 'ipnn':
-        #return ProductNeuralNetworkModel(field_dims, embed_dim=16, mlp_dims=(16,), method='inner', dropout=0.2)
-        #return ProductNeuralNetworkModel(field_dims, embed_dim=64, mlp_dims=(16,16), method='inner', dropout=0.2)
-        return ProductNeuralNetworkModel(field_dims, embed_dim=64, mlp_dims=(128,64,128,128,128,), method='inner', dropout=0.2)
-    elif name == 'opnn':
+    elif name == 'ipnn':    # 比较有效果
+        return ProductNeuralNetworkModel(field_dims, embed_dim=16, mlp_dims=(16,), method='inner', dropout=0.2)
+    elif name == 'opnn':    # precision：86%，recall：16%
         return ProductNeuralNetworkModel(field_dims, embed_dim=16, mlp_dims=(16,), method='outer', dropout=0.2)
     elif name == 'dcn':
         return DeepCrossNetworkModel(field_dims, embed_dim=16, num_layers=3, mlp_dims=(16, 16), dropout=0.2)
@@ -84,13 +77,10 @@ def get_model(name, dataset):
         return NeuralCollaborativeFiltering(field_dims, embed_dim=16, mlp_dims=(16, 16), dropout=0.2,
                                             user_field_idx=dataset.user_field_idx,
                                             item_field_idx=dataset.item_field_idx)
-    elif name == 'fnfm':
-        return FieldAwareNeuralFactorizationMachineModel(field_dims, embed_dim=64, mlp_dims=(64,32,), dropouts=(0.2, 0.2))
-    elif name == 'dfm':
-        #return DeepFactorizationMachineModel(field_dims, embed_dim=16, mlp_dims=(16, 16), dropout=0.2)
-        #return DeepFactorizationMachineModel(field_dims, embed_dim=64, mlp_dims=(256, 256, 256, 256, 256,256), dropout=0.2)
-        #return DeepFactorizationMachineModel(field_dims, embed_dim=128, mlp_dims=(400, 400, 400, 400), dropout=0.2)
-        return DeepFactorizationMachineModel(field_dims, embed_dim=64, mlp_dims=(128, 128, 128), dropout=0.2)
+    elif name == 'fnfm':    # 实验表明，该模型比现有的DeepFM、DCN和NFM等深度学习特征组合模型具有更强的表达能力
+        return FieldAwareNeuralFactorizationMachineModel(field_dims, embed_dim=4, mlp_dims=(64,), dropouts=(0.2, 0.2))
+    elif name == 'dfm':     # 效果比ipnn差一点点，但是已经很好了
+        return DeepFactorizationMachineModel(field_dims, embed_dim=16, mlp_dims=(16, 16), dropout=0.2)
     elif name == 'xdfm':
         return ExtremeDeepFactorizationMachineModel(
             field_dims, embed_dim=16, cross_layer_sizes=(16, 16), split_half=False, mlp_dims=(16, 16), dropout=0.2)
@@ -102,7 +92,7 @@ def get_model(name, dataset):
     elif name == 'afn':
         print("Model:AFN")
         return AdaptiveFactorizationNetwork(
-            field_dims, embed_dim=64, LNN_dim=1500, mlp_dims=(400, 400, 400), dropouts=(0, 0, 0))
+            field_dims, embed_dim=16, LNN_dim=1500, mlp_dims=(400, 400, 400), dropouts=(0, 0, 0))
     else:
         raise ValueError('unknown model name: ' + name)
 
@@ -120,8 +110,7 @@ class EarlyStopper(object):
             self.best_accuracy = accuracy
             self.trial_counter = 0
             torch.save(model, self.save_path)
-            #torch.save(model.state_dict(), self.save_path)
-
+            print('save model')
             return True
         elif self.trial_counter + 1 < self.num_trials:
             self.trial_counter += 1
@@ -131,7 +120,7 @@ class EarlyStopper(object):
 
 
 def train(model, optimizer, data_loader, criterion, device, log_interval=100):
-    model.train()
+    model.train()   # 训练时候要先train()
     total_loss = 0
     tk0 = tqdm.tqdm(data_loader, smoothing=0, mininterval=1.0)
     for i, (fields, target) in enumerate(tk0):
@@ -150,7 +139,7 @@ def train(model, optimizer, data_loader, criterion, device, log_interval=100):
 
 
 def test(model, data_loader, device):
-    model.eval()
+    model.eval()    # 测试评估时候要先eval()，让pytorch把DNN的梯度固定住
     targets, predicts = list(), list()
     with torch.no_grad():
         for fields, target in tqdm.tqdm(data_loader, smoothing=0, mininterval=1.0):
@@ -160,22 +149,16 @@ def test(model, data_loader, device):
             predicts.extend(y.tolist())
 
     from sklearn.metrics import classification_report, precision_score
-    #print(targets)
-    #print(predicts)
     arr = []
     for x in predicts:
-        if x >= 0.5:
-            arr.append(1)
-        else:
-            arr.append(0)
+        arr.append(1) if x >= 0.5 else arr.append(0)
 
     print(classification_report(targets, arr))
     precision = precision_score(targets, arr)#predicts)
     auc = roc_auc_score(targets, predicts)
     print('precision: {}, auc: {}'.format(precision, auc))
-    #return precision
-
-    return roc_auc_score(targets, predicts)
+    return precision
+    # return roc_auc_score(targets, predicts)
 
 
 def sampler(list_data):
@@ -189,6 +172,7 @@ def sampler(list_data):
     print('target train 0/1: {}/{}'.format(len(np.where(target == 0)[0]), len(np.where(target == 1)[0])))
     class_sample_count = np.array([len(np.where(target == t)[0]) for t in np.unique(target)])
     weight = 1. / class_sample_count
+    print('{}, {}'.format(class_sample_count, weight))
     samples_weight = np.array([weight[t] for t in target])
     samples_weight = torch.from_numpy(samples_weight)
     samples_weight = samples_weight.double()
@@ -211,15 +195,13 @@ def sampler2(labels):
 
     class_weights = [num_samples / class_counts[i] for i in range(len(class_counts))]
     weights = [class_weights[labels[i]] for i in range(int(num_samples))]
-    sampler = WeightedRandomSampler(torch.DoubleTensor(weights), int(num_samples), replacement=False)
+    sampler = WeightedRandomSampler(torch.DoubleTensor(weights), int(num_samples))
     return sampler
-
 
 def sampler3(labels):
     weights = compute_sample_weight(class_weight='balanced', y=labels)
-    sampler = WeightedRandomSampler(torch.DoubleTensor(weights), len(labels))#, replacement=False)
+    sampler = WeightedRandomSampler(torch.DoubleTensor(weights), len(labels), replacement=False)
     return sampler
-
 
 
 def main(dataset_name,
@@ -231,10 +213,15 @@ def main(dataset_name,
          weight_decay,
          device,
          save_dir):
-    torch.set_num_threads(12)
-    print('model_name={}'.format(model_name))
-    #print('model_name={}, get_num_threads={}'.format(model_name,torch.get_num_thread()))
 
+    # print('model_name={}, get_num_threads={}'.format(model_name,torch.get_num_thread()))
+    # https://www.jianshu.com/p/0b761be87e54
+    # set_num_threads()设置Pytorch进行CPU多线程并行计算时所占用的线程数。
+    # num_workers设置DataLoader在实现数据预处理的并行化的进程数，并没有设置线程。
+    # 查看服务器线程数：grep 'processor' /proc/cpuinfo | sort -u | wc -l
+    # https://pytorch.org/docs/stable/generated/torch.set_num_threads.html
+    # https://www.programcreek.com/python/example/101245/torch.set_num_threads
+    # torch.set_num_threads(8)
     device = torch.device(device)
     dataset = get_dataset(dataset_name, dataset_path)
     train_length = int(len(dataset) * 0.8)
@@ -243,43 +230,38 @@ def main(dataset_name,
     train_dataset, valid_dataset, test_dataset = torch.utils.data.random_split(
         dataset, (train_length, valid_length, test_length))
 
-
     print('train_dataset.__len__()', train_dataset.__len__())
     print('train_dataset.__getitem__(1)', train_dataset.__getitem__(1)[1])
     train_dataset_labels = []
-    valid_dataset_labels = []
-    test_dataset_labels = []
     for i in range(train_dataset.__len__()):
-        #print(train_dataset.__getitem__(i)[1])
+        # print(train_dataset.__getitem__(i)[1])
         train_dataset_labels.append(train_dataset.__getitem__(i)[1])
-    for i in range(valid_dataset.__len__()):
-        valid_dataset_labels.append(valid_dataset.__getitem__(i)[1])
-    for i in range(test_dataset.__len__()):
-        test_dataset_labels.append(test_dataset.__getitem__(i)[1])
-    #1/0
+    1 / 0
+
+    # weights = torch.FloatTensor([1, 100])
+    # train_sampler = WeightedRandomSampler(weights, len(train_dataset), replacement=True)
+
+    # train_sampler = torch.utils.data.sampler.SubsetRandomSampler(np.random.choice(range(len(train_dataset)), len(train_dataset)))
+
+    from torch.utils.data import DataLoader, WeightedRandomSampler
+    from torch.utils.data.sampler import SubsetRandomSampler
+
+    # https://github.com/chenxijun1029/DeepFM_with_PyTorch/blob/master/main.py
+    # 提出了SubsetRandomSampler，貌似比WeightedRandomSampler效果要好很多
+    sampler = SubsetRandomSampler(range(train_length))
+    sampler = SubsetRandomSampler(range(train_length, valid_length))
 
 
-    #train_sampler = torch.utils.data.sampler.SubsetRandomSampler(np.random.choice(range(len(train_dataset)), len(train_dataset)))
-    #valid_sampler = torch.utils.data.sampler.SubsetRandomSampler(np.random.choice(range(len(valid_dataset)), len(valid_dataset)))
-    #test_sampler = torch.utils.data.sampler.SubsetRandomSampler(np.random.choice(range(len(test_dataset)), len(test_dataset)))
-
-
-    train_data_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, sampler=sampler3(train_dataset_labels), shuffle=False)
-    valid_data_loader = DataLoader(valid_dataset, batch_size=batch_size, num_workers=0)#, sampler=sampler3(valid_dataset_labels), shuffle=False)
-    test_data_loader = DataLoader(test_dataset, batch_size=batch_size, num_workers=0)#, sampler=sampler3(test_dataset_labels), shuffle=False)
-
-    #train_data_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, sampler=SubsetRandomSampler(range(train_length)) )
-    #valid_data_loader = DataLoader(valid_dataset, batch_size=batch_size, num_workers=0)#, sampler=SubsetRandomSampler(range(train_length, valid_length)) )
-    #test_data_loader = DataLoader(test_dataset, batch_size=batch_size, num_workers=0)
-
-    #train_data_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, sampler=train_sampler)
-    #valid_data_loader = DataLoader(valid_dataset, batch_size=batch_size, num_workers=0, sampler=valid_sampler)
-    #test_data_loader = DataLoader(test_dataset, batch_size=batch_size, num_workers=0, sampler=test_sampler)
-
+    train_data_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, sampler=sampler(train_dataset_labels), shuffle=False)
+    # train_data_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, sampler=train_sampler)
+    valid_data_loader = DataLoader(valid_dataset, batch_size=batch_size, num_workers=0)
+    test_data_loader = DataLoader(test_dataset, batch_size=batch_size, num_workers=0)
     model = get_model(model_name, dataset).to(device)
-    criterion = torch.nn.BCELoss()
+
+    weight = 1.0 / torch.Tensor([3711, 7107, 2942], dtype=torch.float)
+    criterion = torch.nn.BCELoss(weight=weight)
     optimizer = torch.optim.Adam(params=model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-    early_stopper = EarlyStopper(num_trials=5, save_path=f'{save_dir}/{model_name}.pt')
+    early_stopper = EarlyStopper(num_trials=2, save_path=f'{save_dir}/{model_name}.pt')
     for epoch_i in range(epoch):
         train(model, optimizer, train_data_loader, criterion, device)
         auc = test(model, valid_data_loader, device)
@@ -300,7 +282,6 @@ if __name__ == '__main__':
     parser.add_argument('--model_name', default='afi')
     parser.add_argument('--epoch', type=int, default=100)
     parser.add_argument('--learning_rate', type=float, default=0.001)
-    #parser.add_argument('--learning_rate', type=float, default=0.01)
     parser.add_argument('--batch_size', type=int, default=2048)
     parser.add_argument('--weight_decay', type=float, default=1e-6)
     parser.add_argument('--device', default='cuda:0')
