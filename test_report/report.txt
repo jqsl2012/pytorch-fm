@@ -24,6 +24,29 @@ avg / total       0.99      0.96      0.97    142269
 
 auc=0.9057927694503005
 
+### opnn
+========pred result list save to file================
+             precision    recall  f1-score   support
+
+          0       1.00      0.94      0.97    140962
+          1       0.09      0.63      0.16      1307
+
+avg / total       0.99      0.94      0.96    142269
+
+auc=0.8990725218592233
+
+
+### afi
+========pred result list save to file================
+             precision    recall  f1-score   support
+
+          0       1.00      0.95      0.97    140962
+          1       0.10      0.58      0.18      1307
+
+avg / total       0.99      0.95      0.97    142269
+
+auc=0.877293735698542
+
 
 ### dfm - 侧重精确率
 ========pred result list save to file================
