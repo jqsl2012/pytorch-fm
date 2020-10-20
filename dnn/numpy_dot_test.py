@@ -1,5 +1,8 @@
 import numpy as np
 
+"""
+https://www.cnblogs.com/luhuan/p/7925790.html
+"""
 x = np.array([[1, 2], [3, 4]])
 print(x)
 print(type(x))
