@@ -11,7 +11,12 @@ import torch.utils.data
 from tqdm import tqdm
 import json
 
-
+"""
+为什么这样做特征处理，参考这篇文章
+http://d2l.ai/chapter_recommender-systems/ctr.html
+https://www.cnblogs.com/wujianming-110117/p/13224347.html
+http://www.ngui.cc/51cto/show-2440.html
+"""
 class CriteoDataset(torch.utils.data.Dataset):
     """
     Criteo Display Advertising Challenge Dataset
