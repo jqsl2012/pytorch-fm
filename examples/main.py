@@ -216,7 +216,7 @@ if __name__ == '__main__':
          '../data/criteo/train.txt',
          # 'D:\\BaiduNetdiskDownload\\criteo_dac_sample.txt',
          # 'G:\\ctr_train_data\\criteo-dac\\train.100w.txt',
-         'ipnn',
+         'lr',
          100,
          0.1,
          2048,
