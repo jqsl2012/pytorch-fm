@@ -35,15 +35,16 @@ class CriteoDataset(torch.utils.data.Dataset):
         https://www.csie.ntu.edu.tw/~r01922136/kaggle-2014-criteo.pdf
     """
 
-    def __init__(self, dataset_path=None, cache_path='.criteo', rebuild_cache=False, min_threshold=10):
+    def __init__(self, dataset_path=None, cache_path='.criteo', rebuild_cache=False, min_threshold=10, predict=True):
+        print('self.predict: ', self.predict)
         # self.NUM_FEATS = 39
         # self.NUM_INT_FEATS = 13
 
         self.NUM_FEATS = 62
-        # self.NUM_INT_FEATS = 54
         self.NUM_INT_FEATS = 42
 
         self.min_threshold = min_threshold
+        self.predict = predict
         if rebuild_cache or not Path(cache_path).exists():
             shutil.rmtree(cache_path, ignore_errors=True)
             if dataset_path is None:
@@ -64,28 +65,14 @@ class CriteoDataset(torch.utils.data.Dataset):
         return self.length
 
     def __build_cache(self, path, cache_path):
-        # feat_mapper, defaults = self.__get_feat_mapper(path)
-
-        if 1 == 2:
+        if False: #not self.predict:
             feat_mapper, defaults = self.__get_feat_mapper(path)
             np.save('feat_mapper.npy', feat_mapper)
             np.save('defaults.npy', defaults)
-            # json_obj = {'feat_mapper': feat_mapper, 'defaults': defaults}
-            # json_str = json.dumps(json_obj) + '\n'
-            # feat_mapper_file = open('/home/eduapp/pytorch-fm/examples/feat_mapper.txt', 'w')
-            # feat_mapper_file.write(json_str)
-            # feat_mapper_file.close()
 
-        if 1 == 1:
+        if self.predict:
             feat_mapper = np.load('feat_mapper.npy', allow_pickle=True).item()
             defaults = np.load('defaults.npy', allow_pickle=True).item()
-            # print(str(feat_mapper))
-            # print(str(defaults))
-            print('========={},{}'.format(len(feat_mapper), len(defaults)))
-            # with open('/home/eduapp/pytorch-fm/examples/feat_mapper.txt', 'rb') as f:
-            #    json_obj = json.load(f)
-            #    print(type(json_obj))
-            #    feat_mapper, defaults = json_obj['feat_mapper'], json_obj['defaults']
 
         # feat_mapper, defaults = self.__get_feat_mapper(path)
         with lmdb.open(cache_path, map_size=1099511627776) as env:

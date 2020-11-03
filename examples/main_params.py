@@ -1,3 +1,4 @@
+import time
 import torch
 import tqdm
 from sklearn.metrics import roc_auc_score
@@ -41,7 +42,7 @@ def get_dataset(name, path):
     elif name == 'flow':
         return FlowDataset(path)
     elif name == 'criteo':
-        return CriteoDataset(path, cache_path='.criteo')
+        return CriteoDataset(path, cache_path='.criteo', predict=False)
     elif name == 'avazu':
         return AvazuDataset(path)
     else:
@@ -277,9 +278,11 @@ def main(dataset_name,
     #test_data_loader = DataLoader(test_dataset, batch_size=batch_size, num_workers=0, sampler=test_sampler)
 
     model = get_model(model_name, dataset).to(device)
+    current_model_name = model_name + '_' + str(time.strftime("%Y%m%d__%H_%M_%S", time.localtime()))
+    print('current_model_name: ', current_model_name)
     criterion = torch.nn.BCELoss()
     optimizer = torch.optim.Adam(params=model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-    early_stopper = EarlyStopper(num_trials=5, save_path=f'{save_dir}/{model_name}.pt')
+    early_stopper = EarlyStopper(num_trials=5, save_path=f'{save_dir}/{current_model_name}.pt')
     for epoch_i in range(epoch):
         train(model, optimizer, train_data_loader, criterion, device)
         auc = test(model, valid_data_loader, device)
