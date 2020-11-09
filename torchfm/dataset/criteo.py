@@ -36,15 +36,15 @@ class CriteoDataset(torch.utils.data.Dataset):
     """
 
     def __init__(self, dataset_path=None, cache_path='.criteo', rebuild_cache=False, min_threshold=10, predict=True):
-        print('self.predict: ', self.predict)
-        # self.NUM_FEATS = 39
-        # self.NUM_INT_FEATS = 13
+        self.NUM_FEATS = 63
+        self.NUM_INT_FEATS = 43
 
-        self.NUM_FEATS = 62
-        self.NUM_INT_FEATS = 42
+        self.feat_mapper_path = '/home/eduapp/pytorch-fm/examples/feat_mapper.npy'
+        self.feat_defaults_path = '/home/eduapp/pytorch-fm/examples/defaults.npy'
 
         self.min_threshold = min_threshold
         self.predict = predict
+        # print('self.predict: ', self.predict)
         if rebuild_cache or not Path(cache_path).exists():
             shutil.rmtree(cache_path, ignore_errors=True)
             if dataset_path is None:
@@ -65,20 +65,20 @@ class CriteoDataset(torch.utils.data.Dataset):
         return self.length
 
     def __build_cache(self, path, cache_path):
-        if False: #not self.predict:
+        if not self.predict:
             feat_mapper, defaults = self.__get_feat_mapper(path)
-            np.save('feat_mapper.npy', feat_mapper)
-            np.save('defaults.npy', defaults)
+            np.save(self.feat_mapper_path, feat_mapper)
+            np.save(self.feat_defaults_path, defaults)
+            print('feat_mapper saved')
 
         if self.predict:
-            feat_mapper = np.load('feat_mapper.npy', allow_pickle=True).item()
-            defaults = np.load('defaults.npy', allow_pickle=True).item()
+            feat_mapper = np.load(self.feat_mapper_path, allow_pickle=True).item()
+            defaults = np.load(self.feat_defaults_path, allow_pickle=True).item()
+            # print('feat_mapper loaded')
 
-        # feat_mapper, defaults = self.__get_feat_mapper(path)
         with lmdb.open(cache_path, map_size=1099511627776) as env:
             field_dims = np.zeros(self.NUM_FEATS, dtype=np.uint32)
             for i, fm in feat_mapper.items():
-                # print(i, fm)
                 field_dims[i - 1] = len(fm) + 1
             with env.begin(write=True) as txn:
                 txn.put(b'field_dims', field_dims.tobytes())
@@ -98,7 +98,6 @@ class CriteoDataset(torch.utils.data.Dataset):
                 skip = skip + 1
                 if skip == 0:
                     continue
-                # values = line.rstrip('\n').split('\t')
                 values = line.rstrip('\n').split(',')
                 if len(values) != self.NUM_FEATS + 1:
                     continue
@@ -107,14 +106,10 @@ class CriteoDataset(torch.utils.data.Dataset):
                 for i in range(self.NUM_INT_FEATS + 1, self.NUM_FEATS + 1):
                     feat_cnts[i][values[i]] += 1
 
-        # print('==feat_cnts==')
-        # print(feat_cnts)
         feat_mapper = {i: {feat for feat, c in cnt.items() if c >= self.min_threshold} for i, cnt in feat_cnts.items()}
         feat_mapper = {i: {feat: idx for idx, feat in enumerate(cnt)} for i, cnt in feat_mapper.items()}
         defaults = {i: len(cnt) for i, cnt in feat_mapper.items()}
 
-        # print(feat_mapper)
-        # print(defaults)
         return feat_mapper, defaults
 
     def __yield_buffer(self, path, feat_mapper, defaults, buffer_size=int(1e5)):
@@ -130,25 +125,16 @@ class CriteoDataset(torch.utils.data.Dataset):
                 skip = skip + 1
                 if skip == 0:
                     continue
-                # values = line.rstrip('\n').split('\t')
                 values = line.rstrip('\n').split(',')
                 if len(values) != self.NUM_FEATS + 1:
                     continue
                 np_array = np.zeros(self.NUM_FEATS + 1, dtype=np.uint32)
                 np_array[0] = int(values[0])
-                # print('============')
-                # print(len(feat_mapper))
-                # print(feat_mapper.keys())
                 for i in range(1, self.NUM_INT_FEATS + 1):
-                    # i=str(i)
-                    # print(feat_mapper[i], values[i], convert_numeric_feature(values[i]))
-                    # print(feat_mapper[i])
                     np_array[i] = feat_mapper[i].get(convert_numeric_feature(values[i]), defaults[i])
                 for i in range(self.NUM_INT_FEATS + 1, self.NUM_FEATS + 1):
                     np_array[i] = feat_mapper[i].get(values[i], defaults[i])
 
-                # print('====np_array====')
-                # print(np_array)
                 buffer.append((struct.pack('>I', item_idx), np_array.tobytes()))
                 item_idx += 1
                 if item_idx % buffer_size == 0:

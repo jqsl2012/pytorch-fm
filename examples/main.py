@@ -1,7 +1,11 @@
+import time
 import torch
 import tqdm
 from sklearn.metrics import roc_auc_score
 from torch.utils.data import DataLoader
+
+from torch.utils.data import DataLoader, WeightedRandomSampler
+from sklearn.utils.class_weight import compute_sample_weight
 
 from torchfm.dataset.avazu import AvazuDataset
 from torchfm.dataset.criteo import CriteoDataset
@@ -14,7 +18,7 @@ from torchfm.model.ffm import FieldAwareFactorizationMachineModel
 from torchfm.model.fm import FactorizationMachineModel
 from torchfm.model.fnfm import FieldAwareNeuralFactorizationMachineModel
 from torchfm.model.fnn import FactorizationSupportedNeuralNetworkModel
-from torchfm.model.hofm import HighOrderFactorizationMachineModel
+#from torchfm.model.hofm import HighOrderFactorizationMachineModel
 from torchfm.model.lr import LogisticRegressionModel
 from torchfm.model.ncf import NeuralCollaborativeFiltering
 from torchfm.model.nfm import NeuralFactorizationMachineModel
@@ -22,6 +26,7 @@ from torchfm.model.pnn import ProductNeuralNetworkModel
 from torchfm.model.wd import WideAndDeepModel
 from torchfm.model.xdfm import ExtremeDeepFactorizationMachineModel
 from torchfm.model.afn import AdaptiveFactorizationNetwork
+from torchfm.dataset.flow import FlowDataset
 
 
 def get_dataset(name, path):
@@ -29,8 +34,10 @@ def get_dataset(name, path):
         return MovieLens1MDataset(path)
     elif name == 'movielens20M':
         return MovieLens20MDataset(path)
+    elif name == 'flow':
+        return FlowDataset(path)
     elif name == 'criteo':
-        return CriteoDataset(path)
+        return CriteoDataset(path, cache_path='.criteo', predict=False)
     elif name == 'avazu':
         return AvazuDataset(path)
     else:
@@ -42,6 +49,8 @@ def get_model(name, dataset):
     Hyperparameters are empirically determined, not opitmized.
     """
     field_dims = dataset.field_dims
+    print('field_dims={}, {}'.format(type(field_dims), field_dims.tolist()))
+
     if name == 'lr':
         return LogisticRegressionModel(field_dims)
     elif name == 'fm':
@@ -55,7 +64,7 @@ def get_model(name, dataset):
     elif name == 'wd':
         return WideAndDeepModel(field_dims, embed_dim=16, mlp_dims=(16, 16), dropout=0.2)
     elif name == 'ipnn':
-        return ProductNeuralNetworkModel(field_dims, embed_dim=16, mlp_dims=(16,), method='inner', dropout=0.2)
+        return ProductNeuralNetworkModel(field_dims, embed_dim=64, mlp_dims=(400, 400, 400), method='inner', dropout=0.2)
     elif name == 'opnn':
         return ProductNeuralNetworkModel(field_dims, embed_dim=16, mlp_dims=(16,), method='outer', dropout=0.2)
     elif name == 'dcn':
@@ -69,9 +78,9 @@ def get_model(name, dataset):
                                             user_field_idx=dataset.user_field_idx,
                                             item_field_idx=dataset.item_field_idx)
     elif name == 'fnfm':
-        return FieldAwareNeuralFactorizationMachineModel(field_dims, embed_dim=4, mlp_dims=(64,), dropouts=(0.2, 0.2))
+        return FieldAwareNeuralFactorizationMachineModel(field_dims, embed_dim=64, mlp_dims=(64,32,), dropouts=(0.2, 0.2))
     elif name == 'dfm':
-        return DeepFactorizationMachineModel(field_dims, embed_dim=16, mlp_dims=(16, 16), dropout=0.2)
+        return DeepFactorizationMachineModel(field_dims, embed_dim=64, mlp_dims=(400, 400, 400), dropout=0.2)
     elif name == 'xdfm':
         return ExtremeDeepFactorizationMachineModel(
             field_dims, embed_dim=16, cross_layer_sizes=(16, 16), split_half=False, mlp_dims=(16, 16), dropout=0.2)
@@ -83,7 +92,7 @@ def get_model(name, dataset):
     elif name == 'afn':
         print("Model:AFN")
         return AdaptiveFactorizationNetwork(
-            field_dims, embed_dim=16, LNN_dim=1500, mlp_dims=(400, 400, 400), dropouts=(0, 0, 0))
+            field_dims, embed_dim=64, LNN_dim=1500, mlp_dims=(400, 400, 400), dropouts=(0, 0, 0))
     else:
         raise ValueError('unknown model name: ' + name)
 
@@ -101,6 +110,7 @@ class EarlyStopper(object):
             self.best_accuracy = accuracy
             self.trial_counter = 0
             torch.save(model, self.save_path)
+
             return True
         elif self.trial_counter + 1 < self.num_trials:
             self.trial_counter += 1
@@ -138,9 +148,7 @@ def test(model, data_loader, device):
             targets.extend(target.tolist())
             predicts.extend(y.tolist())
 
-    from sklearn.metrics import classification_report
-    print(targets)
-    print(predicts)
+    from sklearn.metrics import classification_report, precision_score
     arr = []
     for x in predicts:
         if x >= 0.5:
@@ -149,9 +157,17 @@ def test(model, data_loader, device):
             arr.append(0)
 
     print(classification_report(targets, arr))
+    precision = precision_score(targets, arr)#predicts)
+    auc = roc_auc_score(targets, predicts)
+    print('precision: {}, auc: {}'.format(precision, auc))
+    #return precision
 
     return roc_auc_score(targets, predicts)
 
+def sampler(labels):
+    weights = compute_sample_weight(class_weight='balanced', y=labels)
+    sampler = WeightedRandomSampler(torch.DoubleTensor(weights), len(labels))#, replacement=False)
+    return sampler
 
 def main(dataset_name,
          dataset_path,
@@ -162,7 +178,9 @@ def main(dataset_name,
          weight_decay,
          device,
          save_dir):
+    torch.set_num_threads(12)
     print('model_name={}'.format(model_name))
+
     device = torch.device(device)
     dataset = get_dataset(dataset_name, dataset_path)
     train_length = int(len(dataset) * 0.8)
@@ -170,13 +188,23 @@ def main(dataset_name,
     test_length = len(dataset) - train_length - valid_length
     train_dataset, valid_dataset, test_dataset = torch.utils.data.random_split(
         dataset, (train_length, valid_length, test_length))
-    train_data_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0)
+
+    print('train_dataset.__len__()', train_dataset.__len__())
+    print('train_dataset.__getitem__(1)', train_dataset.__getitem__(1)[1])
+    train_dataset_labels = []
+    for i in range(train_dataset.__len__()):
+        train_dataset_labels.append(train_dataset.__getitem__(i)[1])
+
+    train_data_loader = DataLoader(train_dataset, batch_size=batch_size, num_workers=0, sampler=sampler(train_dataset_labels), shuffle=False)
     valid_data_loader = DataLoader(valid_dataset, batch_size=batch_size, num_workers=0)
     test_data_loader = DataLoader(test_dataset, batch_size=batch_size, num_workers=0)
+
     model = get_model(model_name, dataset).to(device)
+    current_model_name = model_name + '_' + str(time.strftime("%Y%m%d__%H_%M_%S", time.localtime()))
+    print('current_model_name: ', current_model_name)
     criterion = torch.nn.BCELoss()
     optimizer = torch.optim.Adam(params=model.parameters(), lr=learning_rate, weight_decay=weight_decay)
-    early_stopper = EarlyStopper(num_trials=2, save_path=f'{save_dir}/{model_name}.pt')
+    early_stopper = EarlyStopper(num_trials=5, save_path=f'{save_dir}/{current_model_name}.pt')
     for epoch_i in range(epoch):
         train(model, optimizer, train_data_loader, criterion, device)
         auc = test(model, valid_data_loader, device)
@@ -189,37 +217,25 @@ def main(dataset_name,
 
 
 if __name__ == '__main__':
-    # import argparse
-    #
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument('--dataset_name', default='criteo')
-    # parser.add_argument('--dataset_path', help='criteo/train.txt, avazu/train, or ml-1m/ratings.dat')
-    # parser.add_argument('--model_name', default='afi')
-    # parser.add_argument('--epoch', type=int, default=100)
-    # parser.add_argument('--learning_rate', type=float, default=0.001)
-    # parser.add_argument('--batch_size', type=int, default=2048)
-    # parser.add_argument('--weight_decay', type=float, default=1e-6)
-    # parser.add_argument('--device', default='cuda:0')
-    # parser.add_argument('--save_dir', default='chkpt')
-    # args = parser.parse_args()
-    # main(args.dataset_name,
-    #      args.dataset_path,
-    #      args.model_name,
-    #      args.epoch,
-    #      args.learning_rate,
-    #      args.batch_size,
-    #      args.weight_decay,
-    #      args.device,
-    #      args.save_dir)
+    import argparse
 
-    main('criteo',
-         '../data/criteo/train.txt',
-         # 'D:\\BaiduNetdiskDownload\\criteo_dac_sample.txt',
-         # 'G:\\ctr_train_data\\criteo-dac\\train.100w.txt',
-         'lr',
-         100,
-         0.1,
-         2048,
-         1e-6,
-         "cuda:0" if torch.cuda.is_available() else "cpu",
-         '../data/chkpt')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset_name', default='criteo')
+    parser.add_argument('--dataset_path', help='criteo/train.txt, avazu/train, or ml-1m/ratings.dat')
+    parser.add_argument('--model_name', default='afi')
+    parser.add_argument('--epoch', type=int, default=100)
+    parser.add_argument('--learning_rate', type=float, default=0.001)
+    parser.add_argument('--batch_size', type=int, default=2048)
+    parser.add_argument('--weight_decay', type=float, default=1e-6)
+    parser.add_argument('--device', default='cuda:0')
+    parser.add_argument('--save_dir', default='chkpt')
+    args = parser.parse_args()
+    main(args.dataset_name,
+         args.dataset_path,
+         args.model_name,
+         args.epoch,
+         args.learning_rate,
+         args.batch_size,
+         args.weight_decay,
+         args.device,
+         args.save_dir)
