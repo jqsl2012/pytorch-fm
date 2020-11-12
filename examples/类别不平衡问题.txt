@@ -13,3 +13,7 @@ https://stackoverflow.com/questions/47399350/how-does-sample-weight-compare-to-c
 
 WeightedRandomSampler：采样的目的是让模型把一个未知的预测样本分到正类的概率即权重要高，分到
     负类的概率即权重要低。而不是一样的权重，那样正负样本不均衡的情况下，模型的预测能力会很低。
+
+## Focal loss
+https://ptorch.com/news/253.html
+https://github.com/yatengLG/Focal-Loss-Pytorch/blob/master/Demo.ipynb
